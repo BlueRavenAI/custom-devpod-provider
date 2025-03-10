@@ -16,8 +16,6 @@ def run(cmd):
             print(f"{attr}: {value}", file=sys.stderr)
         raise
 
-# The environment variables are set by DevPod.
-# region = os.environ["AZURE_REGION"]
 bicep = os.environ["BICEP_FILE"]
 cmd = sys.argv[1]
 
@@ -27,9 +25,15 @@ if cmd == "create":
     vmSize = os.environ['VM_SIZE']
     diskSize = os.environ['DISK_SIZE']
     rg = os.environ["AZURE_RESOURCE_GROUP"]
-    user =  getpass.getuser()
     dockerUsername = os.environ['GHCR_USERNAME']
     dockerToken = os.environ['GHCR_TOKEN']
+    user = os.environ.get("AZURE_USERNAME")
+    if not user:
+        user = getpass.getuser()
+
+    if user == "root":
+        print("Warning: The current user is 'root'. Using 'brai' instead.")
+        user = "brai"
 
     print(f"Creating machine {machine} with user {user}")
 
@@ -78,22 +82,16 @@ elif cmd == "command":
     with open(f"{folder}/host", 'r') as f:
         host = f.read()
 
-    print(f"running command {command} on machine {machine} folder {folder} host {host}", file=sys.stderr)
-
-    subprocess.run(
-        [
-            "ssh",
-            "-o",
-            "StrictHostKeyChecking=accept-new",
-            f"{host}",
-            "-i",
-            f"{folder}/key",
-            command,
-        ],
-        check=True,
-        stdin=sys.stdin,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
+    os.execvp("ssh",
+              [
+                  "ssh",
+                  "-o",
+                  "StrictHostKeyChecking=accept-new",
+                  f"{host}",
+                  "-i",
+                  f"{folder}/key",
+                  command,
+              ]
     )
 elif cmd == "status":
     rg = os.environ["AZURE_RESOURCE_GROUP"]
