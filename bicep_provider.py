@@ -22,7 +22,7 @@ cmd = sys.argv[1]
 if cmd == "create":
     folder = os.environ["MACHINE_FOLDER"]
     machine = os.environ["MACHINE_ID"]
-    vmSize = os.environ['VM_SIZE']
+    vmSize = os.environ['VM_SIZE'].split(" (")[0] # Remove the description
     diskSize = os.environ['DISK_SIZE']
     rg = os.environ["AZURE_RESOURCE_GROUP"]
     dockerUsername = os.environ['GHCR_USERNAME']
