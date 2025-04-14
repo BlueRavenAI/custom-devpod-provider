@@ -22,6 +22,7 @@ cmd = sys.argv[1]
 if cmd == "create":
     folder = os.environ["MACHINE_FOLDER"]
     machine = os.environ["MACHINE_ID"]
+    location = os.environ["LOCATION"]
     vmSize = os.environ['VM_SIZE'].split(" (")[0] # Remove the description
     diskSize = os.environ['DISK_SIZE']
     rg = os.environ["AZURE_RESOURCE_GROUP"]
@@ -51,6 +52,7 @@ if cmd == "create":
         "--deny-settings-mode 'none' "
         f"--parameters 'adminPasswordOrKey={pubkey}' "
         f"--parameters 'vmName=devpod-{machine}' "
+        f"--parameters 'location={location}' "
         f"--parameters 'adminUsername={user}' "
         f"--parameters 'vmSize={vmSize}' "
         f"--parameters 'diskSize={diskSize}' "
