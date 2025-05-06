@@ -44,7 +44,7 @@ if cmd == "create":
         pubkey = f.read()
 
     # Create deployment stack
-    result = run("az stack group create "
+    result_json = run("az stack group create "
         f"--name devpod-{machine} "
         f"--resource-group '{rg}' "
         f"--template-file '{bicep}' "
@@ -60,15 +60,51 @@ if cmd == "create":
         f"--parameters 'dockerToken={dockerToken}' "
         "--yes")
 
-    result = json.loads(result)
+    result = json.loads(result_json)
     hostname = result["outputs"]["hostname"]["value"]
+    vault_name = result["outputs"]["vaultName"]["value"]
+    vault_rg = result["outputs"]["vaultResourceGroup"]["value"]
+    vm_name = result["outputs"]["vmName"]["value"]
+
     print(f"Created vm with hostname {hostname}")
     with open(f"{folder}/host", 'w') as f:
         f.write(hostname)
 
+    # Save backup info
+    backup_info = {
+        "vault_name": vault_name,
+        "vault_rg": vault_rg,
+        "vm_name": vm_name,
+        "vm_rg": rg
+    }
+    with open(f"{folder}/backup_info.json", 'w') as f:
+        json.dump(backup_info, f)
+
 elif cmd == "delete":
     machine = os.environ["MACHINE_ID"]
     rg = os.environ["AZURE_RESOURCE_GROUP"]
+    folder = os.environ["MACHINE_FOLDER"]
+    backup_info_file = f"{folder}/backup_info.json"
+
+    if os.path.exists(backup_info_file):
+        with open(backup_info_file, 'r') as f:
+            backup_info = json.load(f)
+        vault_name = backup_info["vault_name"]
+        vault_rg = backup_info["vault_rg"]
+        vm_name = backup_info["vm_name"]
+        vm_rg = backup_info["vm_rg"]
+        container_name = f"VM;iaasvmcontainerv2;{vm_rg};{vm_name}"
+        disable_cmd = (
+            f"az backup protection disable --resource-group '{vault_rg}' --vault-name '{vault_name}' "
+            f"--container-name '{container_name}' --item-name '{vm_name}' "
+            "--backup-management-type AzureIaasVM "
+            "--delete-backup-data false --yes"
+        )
+        run(disable_cmd)
+        print(f"Successfully disabled backup for VM '{vm_name}'.")
+    else:
+        print("Warning: Backup info file not found. Skipping backup disable step.")
+    
     run(
         "az stack group delete "
         f"--name 'devpod-{machine}' "
