@@ -16,7 +16,7 @@ def run(cmd):
             print(f"{attr}: {value}", file=sys.stderr)
         raise
 
-devpod_bicep_provider_path = os.environ["DEVPOD_BICEP_PROVIDER"]
+devpod_bicep_provider_path = os.environ["DEVPOD_BICEP_PROVIDER_PATH"]
 cmd = sys.argv[1]
 
 if cmd == "create":
