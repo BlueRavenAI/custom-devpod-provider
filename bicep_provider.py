@@ -16,7 +16,7 @@ def run(cmd):
             print(f"{attr}: {value}", file=sys.stderr)
         raise
 
-bicep = os.environ["BICEP_FILE"]
+devpod_bicep_provider_path = os.environ["DEVPOD_BICEP_PROVIDER"]
 cmd = sys.argv[1]
 
 if cmd == "create":
@@ -43,11 +43,13 @@ if cmd == "create":
     with open(f"{folder}/key.pub", 'r') as f:
         pubkey = f.read()
 
+    vm_ubuntu_bicep_path = os.path.join(devpod_bicep_provider_path, "vm_ubuntu.bicep")
+
     # Create deployment stack
     result_json = run("az stack group create "
         f"--name devpod-{machine} "
         f"--resource-group '{rg}' "
-        f"--template-file '{bicep}' "
+        f"--template-file '{vm_ubuntu_bicep_path}' "
         "--action-on-unmanage 'DeleteAll' "
         "--deny-settings-mode 'none' "
         f"--parameters 'adminPasswordOrKey={pubkey}' "
@@ -65,6 +67,8 @@ if cmd == "create":
     vault_name = result["outputs"]["vaultName"]["value"]
     vault_rg = result["outputs"]["vaultResourceGroup"]["value"]
     vm_name = result["outputs"]["vmName"]["value"]
+    vm_id = result["outputs"]["vmId"]["value"]
+    backup_policy_name = result["outputs"]["backupPolicyName"]["value"]
 
     print(f"Created vm with hostname {hostname}")
     with open(f"{folder}/host", 'w') as f:
@@ -79,6 +83,18 @@ if cmd == "create":
     }
     with open(f"{folder}/backup_info.json", 'w') as f:
         json.dump(backup_info, f)
+
+    vm_backup_bicep_path = os.path.join(devpod_bicep_provider_path, "vm_backup.bicep")
+    print(f"Deploying backup configuration using {vm_backup_bicep_path} to resource group {vault_rg}")
+    run("az deployment group create "
+        f"--name devpod-{machine}-backup "
+        f"--resource-group '{vault_rg}' "
+        f"--template-file '{vm_backup_bicep_path}' "
+        f"--parameters vaultName='{vault_name}' "
+        f"--parameters backupPolicyName='{backup_policy_name}' "
+        f"--parameters vmName='{vm_name}' "
+        f"--parameters vmResourceGroup='{rg}' "
+        f"--parameters vmResourceId='{vm_id}'")
 
 elif cmd == "delete":
     machine = os.environ["MACHINE_ID"]
