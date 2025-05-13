@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import getpass
+import urllib.request
 
 def run(cmd):
     print(f"Running: {cmd}", file=sys.stderr)
@@ -44,12 +45,22 @@ if cmd == "create":
         pubkey = f.read()
 
     vm_ubuntu_bicep_url = f"{GITHUB_RAW_BASE_URL}vm_ubuntu.bicep"
+    vm_backup_bicep_url = f"{GITHUB_RAW_BASE_URL}vm_backup.bicep"
+
+    local_vm_ubuntu_bicep_path = os.path.join(folder, "vm_ubuntu.bicep")
+    local_vm_backup_bicep_path = os.path.join(folder, "vm_backup.bicep")
+
+    # Download the Bicep files
+    with urllib.request.urlopen(vm_ubuntu_bicep_url) as response, open(local_vm_ubuntu_bicep_path, 'wb') as out_file:
+        out_file.write(response.read())
+    with urllib.request.urlopen(vm_backup_bicep_url) as response, open(local_vm_backup_bicep_path, 'wb') as out_file:
+        out_file.write(response.read())
 
     # Create deployment stack
     result_json = run("az stack group create "
         f"--name devpod-{machine} "
         f"--resource-group '{rg}' "
-        f"--template-uri '{vm_ubuntu_bicep_url}' "
+        f"--template-file '{local_vm_ubuntu_bicep_path}' "
         "--action-on-unmanage 'DeleteAll' "
         "--deny-settings-mode 'none' "
         f"--parameters 'adminPasswordOrKey={pubkey}' "
@@ -84,12 +95,11 @@ if cmd == "create":
     with open(f"{folder}/backup_info.json", 'w') as f:
         json.dump(backup_info, f)
 
-    vm_backup_bicep_url = f"{GITHUB_RAW_BASE_URL}vm_backup.bicep" # Added this line
     print(f"Deploying backup configuration using {vm_backup_bicep_url} to resource group {vault_rg}")
     run("az deployment group create "
         f"--name devpod-{machine}-backup "
         f"--resource-group '{vault_rg}' "
-        f"--template-uri '{vm_backup_bicep_url}' "
+        f"--template-file '{local_vm_backup_bicep_path}' "
         f"--parameters vaultName='{vault_name}' "
         f"--parameters backupPolicyName='{backup_policy_name}' "
         f"--parameters vmName='{vm_name}' "
