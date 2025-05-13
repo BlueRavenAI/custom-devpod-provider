@@ -16,7 +16,7 @@ def run(cmd):
             print(f"{attr}: {value}", file=sys.stderr)
         raise
 
-GITHUB_RAW_BASE_URL = "https://raw.githubusercontent.com/BlueRavenAI/custom-devpod-provider/refs/heads/master/main/"
+GITHUB_RAW_BASE_URL = "https://raw.githubusercontent.com/BlueRavenAI/custom-devpod-provider/refs/heads/master/"
 cmd = sys.argv[1]
 
 if cmd == "create":
