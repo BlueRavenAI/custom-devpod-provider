@@ -1,0 +1,83 @@
+name: bicep
+version: 0.1.0
+description: |-
+  DevPod on a VM described in Bicep
+icon: https://devpod.sh/assets/azure.svg
+options:
+  AZURE_SUBSCRIPTION_ID:
+    description: The azure subscription id
+    required: true
+    command: az account show --query id --output tsv || true
+
+  AZURE_RESOURCE_GROUP:
+    description: The azure resource group name
+    required: true
+    
+  LOCATION:
+    description: The location to deploy the VM
+    required: true
+    suggestions:
+      - southeastasia
+      - westus
+      - uksouth
+      - japaneast
+      - polandcentral
+
+  VM_SIZE:
+    description: Base image size
+    required: true
+    suggestions:
+      - Standard_B4as_v2 (Budget General Purpose, 4vCPU, 16GB, $137.97) [SEA, US, UK]
+      - Standard_D4as_v5 (General Purpose, 4vCPU, 16GB, $157.68) [SEA]
+      - Standard_D16as_v5 (General Purpose, 16vCPU, 64GB, $630.72) [SEA]
+      - Standard_D4as_v6 (General Purpose, 4vCPU, 16GB, $166.44) [US, UK]
+      - Standard_D16as_v6 (General Purpose, 16vCPU, 64GB, $665.76) [US, UK]
+      - Standard_NC8as_T4_v3 (T4 GPU, 8vCPU, 28GB, $767.96) [SEA, US, UK]
+      - Standard_NC24ads_A100_v4 (A100 GPU, 24vCPU, 220GB, $2681.29) [JP, US, PL]
+      - Standard_NC40ads_H100_v5 (H100 GPU, 40vCPU, 320GB, $6624.02) [SEA, US, UK]
+
+  DISK_SIZE:
+    description: Disk size for Azure machine (in GB)
+    required: true
+    default: 256
+    suggestions:
+     - 30
+     - 32
+     - 64
+     - 128
+     - 256
+     - 512
+     - 1024
+     - 2048
+
+  GHCR_USERNAME:
+    description: Docker username for ghcr.io.
+    type: string
+    default: ""
+    required: true
+
+  GHCR_TOKEN:
+    description: Docker token for ghcr.io login.
+    type: string
+    default: ""
+    password: true
+    required: true
+  
+  AZURE_USERNAME:
+    description: username of azure base instance. If not defined, use local username.
+    type: string
+
+binaries:
+  BICEP_PROVIDER:
+    - os: linux
+      arch: amd64
+      path: https://raw.githubusercontent.com/BlueRavenAI/custom-devpod-provider/refs/heads/master/bicep_provider.py
+      
+exec:
+  init: 'python "${BICEP_PROVIDER}" init'
+  command: 'python "${BICEP_PROVIDER}" command'
+  create: 'python "${BICEP_PROVIDER}" create'
+  delete: 'python "${BICEP_PROVIDER}" delete'
+  start: 'python "${BICEP_PROVIDER}" start'
+  stop: 'python "${BICEP_PROVIDER}" stop'
+  status: 'python "${BICEP_PROVIDER}" status'

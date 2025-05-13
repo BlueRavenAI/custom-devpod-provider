@@ -16,7 +16,7 @@ def run(cmd):
             print(f"{attr}: {value}", file=sys.stderr)
         raise
 
-devpod_bicep_provider_path = os.environ["DEVPOD_BICEP_PROVIDER_PATH"]
+GITHUB_RAW_BASE_URL = "https://raw.githubusercontent.com/BlueRavenAI/custom-devpod-provider/refs/heads/master/main/"
 cmd = sys.argv[1]
 
 if cmd == "create":
@@ -43,13 +43,13 @@ if cmd == "create":
     with open(f"{folder}/key.pub", 'r') as f:
         pubkey = f.read()
 
-    vm_ubuntu_bicep_path = os.path.join(devpod_bicep_provider_path, "vm_ubuntu.bicep")
+    vm_ubuntu_bicep_url = f"{GITHUB_RAW_BASE_URL}vm_ubuntu.bicep"
 
     # Create deployment stack
     result_json = run("az stack group create "
         f"--name devpod-{machine} "
         f"--resource-group '{rg}' "
-        f"--template-file '{vm_ubuntu_bicep_path}' "
+        f"--template-file '{vm_ubuntu_bicep_url}' "
         "--action-on-unmanage 'DeleteAll' "
         "--deny-settings-mode 'none' "
         f"--parameters 'adminPasswordOrKey={pubkey}' "
@@ -84,12 +84,12 @@ if cmd == "create":
     with open(f"{folder}/backup_info.json", 'w') as f:
         json.dump(backup_info, f)
 
-    vm_backup_bicep_path = os.path.join(devpod_bicep_provider_path, "vm_backup.bicep")
-    print(f"Deploying backup configuration using {vm_backup_bicep_path} to resource group {vault_rg}")
+    vm_backup_bicep_url = f"{GITHUB_RAW_BASE_URL}vm_backup.bicep" # Added this line
+    print(f"Deploying backup configuration using {vm_backup_bicep_url} to resource group {vault_rg}")
     run("az deployment group create "
         f"--name devpod-{machine}-backup "
         f"--resource-group '{vault_rg}' "
-        f"--template-file '{vm_backup_bicep_path}' "
+        f"--template-file '{vm_backup_bicep_url}' "
         f"--parameters vaultName='{vault_name}' "
         f"--parameters backupPolicyName='{backup_policy_name}' "
         f"--parameters vmName='{vm_name}' "
